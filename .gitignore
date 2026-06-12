@@ -7,3 +7,5 @@ __pycache__/
 __init__.py
 test_config.py
 docker-compose.yml
+pytest.ini
+alembic.ini
