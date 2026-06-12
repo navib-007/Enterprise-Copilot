@@ -5,7 +5,7 @@ __pycache__/
 *$py.class
 .pytest_cache/
 __init__.py
-test_config.py
 docker-compose.yml
 pytest.ini
 alembic.ini
+app/tests/*
