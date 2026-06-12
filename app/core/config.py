@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 from enum import StrEnum
 from functools import lru_cache
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import computed_field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Environment(StrEnum):
@@ -29,13 +30,16 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     log_level: str = "INFO"
 
-    backend_cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    backend_cors_origins: Annotated[
+        list[str],
+        NoDecode,
+    ] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "enterprise_ai_ops"
-    postgres_user: str = "enterprise_user"
-    postgres_password: str = "change_me"
+    postgres_user: str
+    postgres_password: str
 
     redis_host: str = "localhost"
     redis_port: int = 6379
@@ -50,14 +54,19 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 15
     jwt_refresh_token_expire_days: int = 7
     jwt_algorithm: str = "HS256"
-    jwt_private_key: str = "replace_with_secure_private_key"
-    jwt_public_key: str = "replace_with_secure_public_key"
-    jwt_refresh_secret: str = "replace_with_secure_refresh_secret"
+    jwt_private_key: str
+    jwt_public_key: str
+    jwt_refresh_secret: str
 
     @field_validator("backend_cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: Any) -> list[str]:
         if isinstance(value, str):
+            if value.strip().startswith("["):
+                parsed_value = json.loads(value)
+                if not isinstance(parsed_value, list):
+                    raise TypeError("BACKEND_CORS_ORIGINS JSON value must be a list of strings")
+                return [str(origin).strip() for origin in parsed_value if str(origin).strip()]
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         if isinstance(value, list):
             return [str(origin).strip() for origin in value if str(origin).strip()]
